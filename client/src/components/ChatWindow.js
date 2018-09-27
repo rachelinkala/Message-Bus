@@ -9,8 +9,9 @@ import {
   TextArea,
   Button,
 } from 'semantic-ui-react';
-import styled from 'styled-components'
-import ChatMessage from './ChatMessage'
+import styled from 'styled-components';
+import axios from 'axios';
+import ChatMessage from './ChatMessage';
 
 const MainWindow = styled(Segment)`
   border: 3px solid black;
@@ -35,7 +36,17 @@ class ChatWindow extends React.Component {
   state = { message: '' }
 
   componentDidMount() {
-    this.props.dispatch(setFlash('Welcome to React Chat', 'green'))
+    window.MessageBus.start()
+    const { dispatch } = this.props
+    dispatch(setFlash('Welcome to React Chat', 'green'))
+
+    window.MessageBus.subscribe("/chat_channel", (data) => {
+      dispatch(addMessage(data))
+    })
+  }
+
+  componentWillUnmount() {
+    window.MessageBus.unsubscribe("/chat_channel")
   }
 
   displayMessages = () => {
@@ -56,10 +67,10 @@ class ChatWindow extends React.Component {
 
   addMessage = (e) => {
     e.preventDefault()
-    const { dispatch, user: { email } } = this.props
+    const { user: { email } } = this.props
     const { message } = this.state
-    dispatch(addMessage({ email, body: message }))
-    this.setState({ message: '' })
+    axios.post('/api/messages', { email, body: message })
+      .then( () => this.setState({ message: '' }) )
   }
 
   render() {
